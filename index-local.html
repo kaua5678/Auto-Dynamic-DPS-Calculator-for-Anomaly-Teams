@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>绝区零 队伍伤害计算器</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{--bg:#0f1117;--card:#1a1d27;--border:#2a2e3d;--text:#e4e6eb;--text-dim:#8b8fa3;--accent:#6366f1;--accent-l:#818cf8;--green:#22c55e;--red:#ef4444;--orange:#f59e0b;--cyan:#06b6d4;--pink:#ec4899;--purple:#a855f7;--r:10px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:13px}
+.hd{background:linear-gradient(135deg,#1e1b4b,#312e81,#1e1b4b);padding:16px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.hd h1{font-size:18px;font-weight:700;background:linear-gradient(135deg,var(--accent-l),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hd .sub{color:var(--text-dim);font-size:11px;margin-top:2px}
+.btn{padding:8px 22px;background:linear-gradient(135deg,var(--accent),#7c3aed);color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px}
+.btn:hover{box-shadow:0 4px 16px rgba(99,102,241,.4)}
+.btn:disabled{opacity:.5;cursor:wait}
+.wrap{max-width:1400px;margin:0 auto;padding:16px;display:grid;grid-template-columns:320px 1fr;gap:14px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:14px}
+.ch{padding:10px 14px;border-bottom:1px solid var(--border);font-weight:600;font-size:12px;background:rgba(99,102,241,.05)}
+.cb{padding:10px 14px}
+.row{display:grid;grid-template-columns:auto 1fr auto auto;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)}
+.row:last-child{border-bottom:none}
+.row input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
+.nm{font-weight:600;font-size:12px;min-width:48px}
+.sl{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:4px 6px;border-radius:5px;font-size:11px;cursor:pointer}
+.sl:focus{border-color:var(--accent);outline:none}
+.fg{display:flex;flex-direction:column;gap:2px;margin-bottom:7px}
+.fl{font-size:11px;color:var(--text-dim)}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.fi{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:5px;font-size:12px}
+.fi:focus{border-color:var(--accent);outline:none}
+select.fi{cursor:pointer}
+.res{display:flex;flex-direction:column;gap:12px}
+.ss{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.sc{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:12px;text-align:center}
+.sv{font-size:20px;font-weight:700;margin-bottom:2px}
+.sl2{font-size:11px;color:var(--text-dim)}
+.sc.dmg .sv{color:var(--orange)}.sc.scr .sv{color:var(--accent-l)}.sc.tm .sv{color:var(--cyan)}.sc.hp .sv{color:var(--green)}
+.cg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cc{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:12px}
+.cc h3{font-size:12px;margin-bottom:8px}
+.cw{position:relative;height:240px}
+.dt{width:100%;border-collapse:collapse;font-size:11px}
+.dt th{text-align:left;padding:6px 8px;background:rgba(99,102,241,.08);color:var(--text-dim);font-weight:600;border-bottom:1px solid var(--border)}
+.dt td{padding:6px 8px;border-bottom:1px solid var(--border)}
+.dt tr:hover{background:rgba(34,40,55,.5)}
+.tg{display:inline-block;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:600}
+.tg-fire{background:rgba(239,68,68,.15);color:#f87171}.tg-phys{background:rgba(245,158,11,.15);color:#fbbf24}.tg-wind{background:rgba(34,197,94,.15);color:#4ade80}.tg-ether{background:rgba(168,85,247,.15);color:#c084fc}.tg-elec{background:rgba(99,102,241,.15);color:#818cf8}.tg-光{background:rgba(255,220,80,.15);color:#fde047}
+.sb{padding:5px 12px;background:var(--card);border:1px solid var(--border);border-radius:5px;font-size:11px;color:var(--text-dim);display:flex;align-items:center;gap:5px}
+.sd{width:7px;height:7px;border-radius:50%}.sd.ok{background:var(--green)}.sd.err{background:var(--red)}
+.sp{display:inline-block;width:12px;height:12px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:sp .6s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.weak-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px}
+.weak-item{display:flex;flex-direction:column;gap:2px}
+.weak-item label{font-size:10px;color:var(--text-dim);text-align:center}
+.buff-tbl{width:100%;border-collapse:collapse;font-size:10px}
+.buff-tbl th{padding:3px 4px;background:rgba(99,102,241,.08);color:var(--text-dim);font-weight:600;border-bottom:1px solid var(--border);font-size:9px}
+.buff-tbl td{padding:2px 3px;border-bottom:1px solid var(--border)}
+.buff-tbl input{width:52px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:2px 4px;border-radius:3px;font-size:10px;text-align:center}
+.buff-tbl input:focus{border-color:var(--accent);outline:none}
+@media(max-width:1100px){.wrap{grid-template-columns:1fr}.ss{grid-template-columns:repeat(2,1fr)}.cg{grid-template-columns:1fr}}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+</style>
+</head>
+<body>
+<div class="hd">
+  <div><h1>⚔️ 绝区零队伍伤害计算器</h1><div class="sub">xlwings 直连本地 Excel · Excel 自己算 · 改配置即时出结果</div></div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <div class="sb"><span class="sd" id="sd"></span><span id="st">未连接</span></div>
+    <button class="btn" id="btn" onclick="calc()"><span>⚡</span> 计算</button>
+  </div>
+</div>
+<div class="wrap">
+<!-- 左侧面板 -->
+<div style="display:flex;flex-direction:column;gap:0">
+  <div class="card"><div class="ch">👥 队伍配置</div><div class="cb" id="tc"></div></div>
+  <div class="card"><div class="ch">👹 Boss 配置</div><div class="cb" id="boss-cfg"></div></div>
+  <div class="card"><div class="ch">🎯 全队拐力 (Buff表)</div><div class="cb" id="buff-tbl" style="overflow-x:auto"></div></div>
+</div>
+<!-- 右侧结果 -->
+<div class="res" id="ra">
+  <div class="ss" id="sum"></div>
+  <div class="cg">
+    <div class="cc"><h3>📊 伤害占比</h3><div class="cw"><canvas id="c1"></canvas></div></div>
+    <div class="cc"><h3>📈 伤害 & DPS</h3><div class="cw"><canvas id="c2"></canvas></div></div>
+    <div class="cc"><h3>⏱️ 时间分配</h3><div class="cw"><canvas id="c3"></canvas></div></div>
+    <div class="cc"><h3>🎯 失衡 & 积蓄</h3><div class="cw"><canvas id="c4"></canvas></div></div>
+  </div>
+  <div class="card"><div class="ch">📋 详细数据</div><div class="cb" style="overflow-x:auto">
+    <table class="dt" id="dt"><thead><tr><th>角色</th><th>元素</th><th>命座</th><th>武器</th><th>时间</th><th>伤害</th><th>占比</th><th>失衡</th><th>积蓄</th><th>喧响</th><th>DPS</th></tr></thead><tbody></tbody></table>
+  </div></div>
+  <div class="card"><div class="ch">🏆 危局分数</div><div class="cb" id="score-area"></div></div>
+  <div id="char-details"></div>
+  <div class="card"><div class="ch">🔊 喧响 & ⚡ 能量</div><div class="cb"><div class="cw"><canvas id="c5"></canvas></div></div></div>
+  <div class="card"><div class="ch">📈 分段伤害 (时间 vs 血量占比)</div><div class="cb"><div class="cw"><canvas id="c6"></canvas></div></div></div>
+</div>
+</div>
+<script>
+const CL={'维':'#22c55e','简':'#f59e0b','蕾':'#fde047','柚叶':'#ec4899','爱丽丝':'#f59e0b','柏妮思':'#ef4444','南宫羽':'#a855f7'};
+const EN={wind:'风',phys:'物理',fire:'火',ether:'以太',光:'光',elec:'电'};
+let cfg=null,buffsData=null,ch={};
+
+function ss(t,x){document.getElementById('sd').className='sd '+t;document.getElementById('st').textContent=x}
+function gv(id,def){const el=document.getElementById(id);return el?+el.value:def}
+function fn(n){if(n==null)return'-';if(n>=1e8)return(n/1e8).toFixed(2)+'亿';if(n>=1e4)return(n/1e4).toFixed(1)+'万';if(n>=1e3)return n.toLocaleString('zh-CN',{maximumFractionDigits:0});return typeof n==='number'?n.toFixed(1):n}
+
+async function loadCfg(){
+  try{
+    const r=await fetch('/api/config');const d=await r.json();
+    cfg=d;buffsData=d.buffs||[];
+    if(d.team)renderTeam(d.team);
+    if(d.boss)renderBoss(d.boss);
+    renderBuffs(d.buffs||[],d.buffHeaders||[]);
+    ss('ok','已连接 Excel');
+  }catch(e){ss('err','连接失败: '+e.message)}
+}
+
+function renderTeam(team){
+  document.getElementById('tc').innerHTML=team.map((c,i)=>{
+    const el=c.element||'phys';const wl=c.weapons||['无'];
+    return `<div class="row">
+      <input type="checkbox" class="cbox" data-i="${i}" ${c.selected?'checked':''}>
+      <div><span class="nm">${c.name}</span><span class="tg tg-${el}">${EN[el]||el}</span></div>
+      <select class="sl cq" data-i="${i}">${(c.name==='柚叶'?[0,1,2]:[0,1,2,3,4,5,6]).map(n=>`<option value="${n}" ${n===c.constellation?'selected':''}>${n}命</option>`).join('')}</select>
+      <select class="sl cw2" data-i="${i}">${wl.map(w=>`<option value="${w}" ${w===c.weapon?'selected':''}>${w}</option>`).join('')}</select>
+    </div>`}).join('');
+}
+
+function renderBoss(b){
+  if(!b)return;
+  const wk=b.weakness||{};
+  document.getElementById('boss-cfg').innerHTML=`
+    <div class="fr">
+      <div class="fg"><label class="fl">Boss 血量</label><input type="number" class="fi" id="bhp" value="${b.hp||205970837}"></div>
+      <div class="fg"><label class="fl">失衡值</label><input type="number" class="fi" id="bstn" value="${b.stun||15486}"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">失衡时间</label><input type="number" class="fi" id="bst" value="${b.stunTime||12}"></div>
+      <div class="fg"><label class="fl">失衡易伤</label><input type="number" class="fi" id="bsv" value="${b.stunVuln||1.5}" step="0.1"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">怪物防御</label><input type="number" class="fi" id="bdf" value="${b.def||60}"></div>
+      <div class="fg"><label class="fl">弹刀次数</label><input type="number" class="fi" id="bpc" value="${b.parryCount||6}"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">异常条系数</label><input type="number" class="fi" id="bac" value="${b.anomalyCoeff||1}" step="0.01"></div>
+      <div class="fg"><label class="fl">危局异常系数</label><input type="number" class="fi" id="bbac" value="${b.bossAnomalyCoeff||1.1}" step="0.01"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">boss赠送失衡</label><input type="number" class="fi" id="bbsg" value="${b.bossStunGift||0}"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">秽盾数量</label><input type="number" class="fi" id="bsc" value="${b.shieldCount||0}"></div>
+      <div class="fg"><label class="fl">能量盾数量</label><input type="number" class="fi" id="bes" value="${b.energyShield||0}"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">单人喧响溢出</label><input type="number" class="fi" id="bdo" value="${b.decibelOverflow||1250}"></div>
+      <div class="fg"><label class="fl">boss无敌时间</label><input type="number" class="fi" id="bit" value="${b.invincibleTime||0}"></div>
+    </div>
+    <div class="fg"><label class="fl">有效时间 (180-无敌)</label><input type="number" class="fi" id="bet" value="${b.effectiveTime||180}" readonly style="opacity:.7"></div>
+    <div style="margin-top:6px">
+      <label class="fl" style="margin-bottom:4px;display:block">怪物弱点 (选无/弱点/抗性)</label>
+      <div class="weak-grid">
+        ${['风','物理','火','以太'].map(el=>`<div class="weak-item">
+          <label>${el}</label>
+          <select class="fi wk" data-el="${el}">
+            <option value="无" ${(wk[el]||'无')==='无'?'selected':''}>无</option>
+            <option value="弱点" ${wk[el]==='弱点'?'selected':''}>弱点 (+0.2)</option>
+            <option value="抗性" ${wk[el]==='抗性'?'selected':''}>抗性 (-0.4)</option>
+          </select>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  // 无敌时间联动有效时间
+  const bitEl=document.getElementById('bit');
+  const betEl=document.getElementById('bet');
+  if(bitEl&&betEl)bitEl.addEventListener('input',e=>{betEl.value=180-(+e.target.value||0);});
+}
+
+function renderBuffs(buffs,headers){
+  if(!buffs||!headers)return;
+  // 只保留危局buff和boss行
+  const filtered=buffs.filter(b=>b.name==='危局buff'||b.name==='boss');
+  const hdrs=headers.map(h=>`<th>${h.name}</th>`).join('');
+  document.getElementById('buff-tbl').innerHTML=`<table class="buff-tbl">
+    <thead><tr><th style="min-width:50px">来源</th>${hdrs}</tr></thead>
+    <tbody>${filtered.map(b=>`<tr>
+      <td style="font-weight:600;white-space:nowrap">${b.label}</td>
+      ${headers.map(h=>`<td><input type="number" class="bi" data-row="${b.row}" data-key="${h.key}" value="${b[h.key]??''}" step="0.01"></td>`).join('')}
+    </tr>`).join('')}</tbody></table>`;
+}
+
+async function calc(){
+  const btn=document.getElementById('btn');btn.disabled=true;btn.innerHTML='<span class="sp"></span> 计算中...';ss('ok','Excel 计算中...');
+  try{
+    // 收集队伍
+    const team=[];document.querySelectorAll('.cbox').forEach((cb,i)=>{
+      team.push({name:cfg.team[i].name,selected:cb.checked,constellation:+document.querySelectorAll('.cq')[i].value,weapon:document.querySelectorAll('.cw2')[i].value});
+    });
+    // 收集弱点
+    const weakness={};document.querySelectorAll('.wk').forEach(s=>{weakness[s.dataset.el]=s.value});
+    // 收集buff
+    const buffs=[];const buffRows={};
+    document.querySelectorAll('.bi').forEach(inp=>{
+      const r=inp.dataset.row,k=inp.dataset.key,v=inp.value;
+      if(!buffRows[r])buffRows[r]={row:+r};
+      if(v!=='')buffRows[r][k]=+v;
+    });
+    Object.values(buffRows).forEach(b=>buffs.push(b));
+
+    await fetch('/api/update',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({team,boss:{
+        hp:gv('bhp',205970837),
+        stun:gv('bstn',15486),
+        stunTime:gv('bst',12),
+        stunVuln:gv('bsv',1.5),
+        def:gv('bdf',60),
+        parryCount:gv('bpc',6),
+        anomalyCoeff:gv('bac',1),
+        bossAnomalyCoeff:gv('bbac',1.1),
+        bossStunGift:gv('bbsg',0),
+        shieldCount:gv('bsc',0),
+        energyShield:gv('bes',0),
+        decibelOverflow:gv('bdo',1250),
+        invincibleTime:gv('bit',0),
+        effectiveTime:gv('bet',180),
+        weakness
+      },buffs})
+    });
+    const r=await fetch('/api/results');const d=await r.json();render(d);ss('ok','计算完成 ✓');
+  }catch(e){ss('err','失败: '+e.message);console.error(e)}
+  finally{btn.disabled=false;btn.innerHTML='<span>⚡</span> 计算'}
+}
+
+function render(d){
+  document.getElementById('sum').innerHTML=`
+    <div class="sc dmg"><div class="sv">${fn(d.totalDamage)}</div><div class="sl2">总伤害</div></div>
+    <div class="sc scr"><div class="sv">${Math.round(d.totalScore).toLocaleString()}</div><div class="sl2">危局分数</div></div>
+    <div class="sc tm"><div class="sv">${(d.effectiveTime||180).toFixed(0)}s</div><div class="sl2">有效时间</div></div>
+    <div class="sc hp"><div class="sv">${(d.hpPercent*100).toFixed(1)}%</div><div class="sl2">血量占比</div></div>`;
+
+  const rs=d.results,nm=rs.map(r=>r.name),cl=nm.map(n=>CL[n]||'#6366f1');
+  Object.values(ch).forEach(c=>c.destroy?.());ch={};
+
+  ch.pie=new Chart(document.getElementById('c1'),{type:'doughnut',data:{labels:nm,datasets:[{data:rs.map(r=>Math.round(r.damage)),backgroundColor:cl,borderColor:'transparent'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#e4e6eb',padding:8,font:{size:10}}},tooltip:{callbacks:{label:c=>`${c.label}: ${fn(c.raw)} (${(c.raw/d.totalDamage*100).toFixed(1)}%)`}}}}});
+
+  ch.bar=new Chart(document.getElementById('c2'),{type:'bar',data:{labels:nm,datasets:[{label:'伤害',data:rs.map(r=>Math.round(r.damage)),backgroundColor:cl.map(c=>c+'99'),borderColor:cl,borderWidth:1,yAxisID:'y'},{label:'DPS',data:rs.map(r=>Math.round(r.dps)),backgroundColor:cl.map(c=>c+'44'),borderColor:cl.map(c=>c+'88'),borderWidth:1,yAxisID:'y1'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#e4e6eb',font:{size:10}}}},scales:{x:{ticks:{color:'#8b8fa3'},grid:{color:'#2a2e3d'}},y:{position:'left',ticks:{color:'#8b8fa3',callback:v=>fn(v)},grid:{color:'#2a2e3d'}},y1:{position:'right',ticks:{color:'#8b8fa3',callback:v=>fn(v)},grid:{display:false}}}}});
+
+  ch.tp=new Chart(document.getElementById('c3'),{type:'doughnut',data:{labels:nm,datasets:[{data:rs.map(r=>(r.time||0).toFixed(1)),backgroundColor:cl,borderColor:'transparent'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#e4e6eb',padding:8,font:{size:10}}},tooltip:{callbacks:{label:c=>`${c.label}: ${c.raw}s`}}}}});
+
+  ch.stb=new Chart(document.getElementById('c4'),{type:'bar',data:{labels:nm,datasets:[{label:'失衡',data:rs.map(r=>Math.round(r.stun)),backgroundColor:'#6366f199',borderColor:'#6366f1',borderWidth:1},{label:'积蓄',data:rs.map(r=>Math.round(r.accumulation)),backgroundColor:'#22c55e99',borderColor:'#22c55e',borderWidth:1}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#e4e6eb',font:{size:10}}}},scales:{x:{ticks:{color:'#8b8fa3'},grid:{color:'#2a2e3d'}},y:{ticks:{color:'#8b8fa3',callback:v=>fn(v)},grid:{color:'#2a2e3d'}}}}});
+
+  document.querySelector('#dt tbody').innerHTML=rs.map(r=>`<tr>
+    <td><span style="color:${CL[r.name]||'#6366f1'};font-weight:600">${r.name}</span></td>
+    <td><span class="tg tg-${r.element}">${EN[r.element]||r.element}</span></td>
+    <td>${r.constellation}命</td><td>${r.weapon}</td>
+    <td>${(r.time||0).toFixed(1)}s</td><td>${fn(Math.round(r.damage))}</td>
+    <td>${(r.damagePercent*100).toFixed(1)}%</td><td>${fn(Math.round(r.stun))}</td>
+    <td>${fn(Math.round(r.accumulation))}</td><td>${fn(Math.round(r.decibel))}</td>
+    <td>${fn(Math.round(r.dps))}/s</td>
+  </tr>`).join('');
+
+  // 危局分数 - 只显示总分
+  document.getElementById('score-area').innerHTML=`<div style="text-align:center;padding:16px"><div style="font-size:32px;font-weight:700;color:var(--accent-l)">${Math.round(d.totalScore).toLocaleString()}</div><div style="font-size:12px;color:var(--text-dim);margin-top:4px">总分</div></div>`;
+
+  // 各角色单人伤害明细饼图
+  const details=d.charDetail||{};
+  const selected=rs.map(r=>r.name);
+  const detailHtml=selected.map(name=>{
+    const dd=details[name];
+    if(!dd||!dd.items||dd.items.length===0)return'';
+    return `<div class="cc"><h3>${name} 伤害构成 (总 ${fn(Math.round(dd.total))})</h3><div class="cw"><canvas id="cd_${name}"></canvas></div></div>`;
+  }).join('');
+  document.getElementById('char-details').innerHTML=detailHtml?`<div class="cg">${detailHtml}</div>`:'';
+
+  selected.forEach(name=>{
+    const dd=details[name];
+    if(!dd||!dd.items)return;
+    const canvas=document.getElementById('cd_'+name);
+    if(!canvas)return;
+    const labels=dd.items.map(i=>i.name);
+    const vals=dd.items.map(i=>Math.round(i.value));
+    const pcts=dd.items.map(i=>(i.percent*100).toFixed(1)+'%');
+    const colors=['#6366f1','#22c55e','#f59e0b','#ef4444','#06b6d4','#ec4899'];
+    ch['d_'+name]=new Chart(canvas,{type:'doughnut',data:{labels:labels,datasets:[{data:vals,backgroundColor:colors.slice(0,labels.length),borderColor:'transparent'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#e4e6eb',padding:8,font:{size:10}}},tooltip:{callbacks:{label:function(c){return c.label+': '+fn(c.raw)+' ('+pcts[c.dataIndex]+')'}}}}}});
+  });
+
+  // 喧响 & 能量
+  const de=d.decibelEnergy||[];
+  if(de.length>0){
+    ch.de=new Chart(document.getElementById('c5'),{type:'bar',data:{labels:de.map(d=>d.name),datasets:[{label:'喧响',data:de.map(d=>Math.round(d.decibel)),backgroundColor:'#f59e0b99',borderColor:'#f59e0b',borderWidth:1,yAxisID:'y'},{label:'能量',data:de.map(d=>Math.round(d.energy)),backgroundColor:'#06b6d499',borderColor:'#06b6d4',borderWidth:1,yAxisID:'y1'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#e4e6eb',font:{size:10}}}},scales:{x:{ticks:{color:'#8b8fa3'},grid:{color:'#2a2e3d'}},y:{position:'left',ticks:{color:'#8b8fa3'},grid:{color:'#2a2e3d'},title:{display:true,text:'喧响',color:'#8b8fa3'}},y1:{position:'right',ticks:{color:'#8b8fa3'},grid:{display:false},title:{display:true,text:'能量',color:'#8b8fa3'}}}}});
+  }
+
+  // 分段伤害
+  const seg=d.segmentData||[];
+  if(seg.length>0){
+    ch.seg=new Chart(document.getElementById('c6'),{type:'line',data:{labels:seg.map(s=>s.time.toFixed(1)+'s'),datasets:[{label:'血量占比',data:seg.map(s=>+(s.hpPercent*100).toFixed(1)),borderColor:'#ef4444',backgroundColor:'rgba(239,68,68,0.1)',fill:true,tension:0.3,pointRadius:5,pointBackgroundColor:'#ef4444'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#e4e6eb',font:{size:10}}}},scales:{x:{ticks:{color:'#8b8fa3'},grid:{color:'#2a2e3d'},title:{display:true,text:'时间',color:'#8b8fa3'}},y:{ticks:{color:'#8b8fa3',callback:v=>v+'%'},grid:{color:'#2a2e3d'},title:{display:true,text:'血量占比 %',color:'#8b8fa3'}}}}});
+  }
+}
+loadCfg().then(()=>calc());
+</script>
+</body>
+</html>
